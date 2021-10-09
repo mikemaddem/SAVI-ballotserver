@@ -195,12 +195,6 @@ async def tally():
     }
     return results
 
-@router.get("/testing")
-async def sleepy():
-    return {"boo": [
-        "hoo" for i in range(75)
-    ]}
-
 
 @router.get("/publish")
 async def publish():
