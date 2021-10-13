@@ -1,0 +1,22 @@
+# Ballotbox environment variables
+# All variables can also be defined in config.py or secret_config.py
+
+
+# Launch code for electionguard encryption mediator
+# No default, so a value must be supplied
+#LAUNCH_CODE=
+
+# Path to election manifest
+#MANIFEST_PATH="data/manifest.json"
+
+# Number of electionguard guardians
+#NUM_GUARDIANS=2
+
+# Minimum number of electionguard guardians required for a quorum
+#QUORUM=2
+
+# Name of the ballotserver, should be unique
+#BALLOTSERVER_NAME="example_ballot_mediator_server"
+
+# Location to store election state data
+#STORAGE_DIR="data/storage"

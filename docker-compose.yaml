@@ -1,0 +1,13 @@
+---
+version: "3"
+services:
+  ballotserver:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    env_file: docker/env_file
+    volumes:
+      data/storage:data/storage
+
+volumes:
+  data/storage
