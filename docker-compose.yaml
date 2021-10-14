@@ -4,10 +4,9 @@ services:
   ballotserver:
     build:
       context: .
-      dockerfile: docker/Dockerfile
-    env_file: docker/env_file
+      dockerfile: ./docker/Dockerfile
+    env_file: ./docker/env_file
     volumes:
-      data/storage:data/storage
-
-volumes:
-  data/storage
+      - ./data/storage/:/app/data/storage/
+    ports:
+      - 80:80
