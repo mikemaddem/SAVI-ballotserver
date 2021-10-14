@@ -13,3 +13,6 @@ fastapi == 0.70.0
 
 # app/ballot.py: 3
 pydantic == 1.8.2
+
+# run.py: 3
+uvicorn == 0.15.0
