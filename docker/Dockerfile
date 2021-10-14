@@ -13,7 +13,7 @@ RUN mkdir /app
 WORKDIR /app
 COPY run.py .
 COPY app ./app
-COPY data/manifest.json data/manifest.json
+COPY app/data/manifest.json data/manifest.json
 
 # Run on port 0.0.0.0:80
 CMD python runserver -a "0.0.0.0" -p 80
