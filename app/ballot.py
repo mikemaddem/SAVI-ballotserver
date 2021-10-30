@@ -23,6 +23,10 @@ class BallotEncryptionRequest(BaseModel):
     action: str
 
 
+class BallotChallengeRequest(BaseModel):
+    verification_code: str
+
+
 @router.post("/info")
 async def gen_ballot_info(ballot_info_params: BallotInfoRequest):
     """
@@ -101,3 +105,30 @@ async def encrypt_ballot(ballot_encryption_params: BallotEncryptionRequest):
         "verification_code": encrypted_ballot.object_id,
         "timestamp": encrypted_ballot.timestamp
     }
+
+
+@router.post("/challenge")
+async def challenge(ballot_challenge_request: BallotChallengeRequest):
+    challenged = election.challenge_ballot(ballot_challenge_request.verification_code)
+
+    if challenged:
+        ballot = {
+            "ballot_id": challenged.object_id,
+            "contests": [
+                {
+                    "object_id": contest.object_id,
+                    "ballot_selections": [
+                        {
+                            "object_id": selection.object_id,
+                            "tally": selection.tally
+                        }
+                        for selection in contest.selections.values() if selection.tally > 0
+                    ]
+                }
+                for contest in challenged.contests.values()
+            ]
+        }
+    else:
+        ballot = {}
+    
+    return ballot

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from electionguard.ballot import BallotBoxState, PlaintextBallot
 from electionguard.ballot_box import BallotBox, get_ballots
 from electionguard.data_store import DataStore
 from electionguard.decryption_mediator import DecryptionMediator
@@ -115,6 +116,14 @@ class Election():
         self.datastore = DataStore()
         self.ballotbox = BallotBox(self.internal_manifest, self.election_context, self.datastore)
 
+    def _create_encrypted_tally(self) -> CiphertextTally:
+        return CiphertextTally(
+                f"{self.ballotserver_name}-tally-{datetime.utcnow().isoformat()}",
+                self.internal_manifest,
+                self.election_context
+            )
+
+
     def initialize_election(self, election_config: BallotServerElectionConfig):
         self.ballotserver_name = election_config.ballotserver_name
         self._load_manifest(election_config.manifest_path)
@@ -142,28 +151,53 @@ class Election():
         # self.datastore
         pass
 
+
     def get_election_tally(self) -> PlaintextTally:
         """
         Tally up the results of the election and return the plaintext tally
 
         Returns:
             PlaintextTally object of the election
+        
+        # TODO separate out the decryption encrypted tally portion
         """
-        encrypted_tally = CiphertextTally(
-                f"{self.ballotserver_name}-tally-{datetime.utcnow().isoformat()}",
-                self.internal_manifest,
-                self.election_context
-            )
-        submitted_ballots = get_ballots(self.datastore, None)
-        for ballot in submitted_ballots.values():
+        encrypted_tally = self._create_encrypted_tally()
+        cast_ballots = get_ballots(self.datastore, BallotBoxState.CAST)
+        for ballot in cast_ballots.values():
             encrypted_tally.append(ballot)
         for guardian in self.guardians:
             guardian_key = guardian.share_election_public_key()
             tally_share = guardian.compute_tally_share(encrypted_tally, self.election_context)
-            ballot_share = guardian.compute_ballot_shares(submitted_ballots.values(), self.election_context)
+            ballot_share = guardian.compute_ballot_shares(cast_ballots.values(), self.election_context)
             self.decryption_mediator.announce(guardian_key, tally_share, ballot_share)
         plaintext_tally = self.decryption_mediator.get_plaintext_tally(encrypted_tally)
         return plaintext_tally
+    
+    def challenge_ballot(self, verification_code: str) -> PlaintextBallot:
+        """
+        Return the proof of ballot spoiling
+
+        Returns:
+            Plaintext spoiled ballot matching verification code, None if not found
+
+        # TODO separate out the decryption encrypted tally portion
+        """
+        encrypted_tally = self._create_encrypted_tally()
+        spoiled_ballots = get_ballots(self.datastore, BallotBoxState.SPOILED)
+        # Return before decryption if ballot isn't there to begin with
+        if not spoiled_ballots.get(verification_code):
+            return None
+        for ballot in spoiled_ballots.values():
+            encrypted_tally.append(ballot)
+        for guardian in self.guardians:
+            guardian_key = guardian.share_election_public_key()
+            tally_share = guardian.compute_tally_share(encrypted_tally, self.election_context)
+            # Only need to decrypt the one ballot
+            ballot_share = guardian.compute_ballot_shares([spoiled_ballots[verification_code]], self.election_context)
+            self.decryption_mediator.announce(guardian_key, tally_share, ballot_share)
+        # Decrypt the ballot
+        decrypted_ballots = self.decryption_mediator.get_plaintext_ballots([spoiled_ballots[verification_code]])
+        return decrypted_ballots[verification_code]
 
 
 router = APIRouter()
