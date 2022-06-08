@@ -12,10 +12,13 @@ from electionguard.key_ceremony import CeremonyDetails, ElectionJointKey
 from electionguard.key_ceremony_mediator import KeyCeremonyMediator
 from electionguard.manifest import InternalManifest, Manifest
 from electionguard.tally import CiphertextTally, PlaintextTally
+from electionguard.group import int_to_q
 from fastapi import APIRouter
 from typing import List
+import os.path
 
 from .manifest import load_manifest_from_file
+from .config import COUNTED_HASH_FILE, STORAGE_DIR, store_hash
 
 
 @dataclass
@@ -165,6 +168,7 @@ class Election():
         cast_ballots = get_ballots(self.datastore, BallotBoxState.CAST)
         for ballot in cast_ballots.values():
             encrypted_tally.append(ballot)
+            store_hash(ballot.crypto_hash_with(int_to_q(0)).to_hex(), COUNTED_HASH_FILE)
         for guardian in self.guardians:
             guardian_key = guardian.share_election_public_key()
             tally_share = guardian.compute_tally_share(encrypted_tally, self.election_context)
@@ -233,3 +237,13 @@ async def tally():
 @router.get("/publish")
 async def publish():
     return {"hi": "there"}
+
+@router.get("/hashes")
+async def get_counted_hashes():
+    """
+    Get the hash of every ballot that was counted
+    :return: JSON array with all the hashes as strings
+    """
+    with open(os.path.join(STORAGE_DIR, COUNTED_HASH_FILE), "r") as f:
+        contents = f.read()
+        return {"hashes": contents.splitlines()}

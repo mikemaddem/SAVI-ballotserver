@@ -5,9 +5,11 @@ from pydantic import BaseModel
 from uuid import uuid4
 import hashlib
 import json
+import os.path
 
 from .election import election
 from .manifest import generate_ballot_style_contests, get_contest_info, get_selection_info
+from .config import STORAGE_DIR, RECEIVED_HASH_FILE, store_hash
 
 router = APIRouter()
 
@@ -108,6 +110,7 @@ async def encrypt_ballot(ballot_encryption_params: BallotEncryptionRequest):
     # Cast or spoil ballot depending on action
     if ballot_encryption_params.action == "CAST":
         election.ballotbox.cast(encrypted_ballot)
+        store_hash(enc_hash, RECEIVED_HASH_FILE)
     else:
         election.ballotbox.spoil(encrypted_ballot)
 
@@ -145,3 +148,13 @@ async def challenge(ballot_challenge_request: BallotChallengeRequest):
         ballot = {}
     
     return ballot
+
+@router.get("/hashes")
+async def get_received_hashes():
+    """
+    Get the hash of every ballot that was received
+    :return: JSON array with all the hashes as strings
+    """
+    with open(os.path.join(STORAGE_DIR, RECEIVED_HASH_FILE), "r") as f:
+        contents = f.read()
+        return {"hashes": contents.splitlines()}
