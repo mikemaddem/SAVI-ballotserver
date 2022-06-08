@@ -1,7 +1,10 @@
 from electionguard.ballot import PlaintextBallot
+from electionguard.group import int_to_q
 from fastapi import APIRouter
 from pydantic import BaseModel
 from uuid import uuid4
+import hashlib
+import json
 
 from .election import election
 from .manifest import generate_ballot_style_contests, get_contest_info, get_selection_info
@@ -85,14 +88,22 @@ async def encrypt_ballot(ballot_encryption_params: BallotEncryptionRequest):
     Args:
         ballot_encryption_params: ballot JSON
     Returns:
-        receipt JSON with verification code and timestamp
+        receipt JSON with verification code, hashes, and timestamp
     """
     # Assert that action is valid before processing ballot
     assert ballot_encryption_params.action == "CAST" or ballot_encryption_params.action == "SPOIL"
 
+    # ballot_encryption_params.ballot is a dict, which we convert to a JSON string
+    # call .encode() on the string and feed it into sha256
+    unenc_hash = hashlib.sha256(json.dumps(ballot_encryption_params.ballot).encode()).hexdigest()
+
     # Make and encrypt ballot object
     ballot = PlaintextBallot.from_json_object(ballot_encryption_params.ballot)
     encrypted_ballot = election.encryption_mediator.encrypt(ballot)
+
+    # the ballot type has a function to run it through sha256 with something prepended to it
+    # this returns an ElementModQ, a variety of BigInteger, which has .to_hex() to make a hex string
+    enc_hash = encrypted_ballot.crypto_hash_with(int_to_q(0)).to_hex()
 
     # Cast or spoil ballot depending on action
     if ballot_encryption_params.action == "CAST":
@@ -103,7 +114,9 @@ async def encrypt_ballot(ballot_encryption_params: BallotEncryptionRequest):
     # Return verification code and timestamp
     return {
         "verification_code": encrypted_ballot.object_id,
-        "timestamp": encrypted_ballot.timestamp
+        "timestamp": encrypted_ballot.timestamp,
+        "unenc_hash": unenc_hash,
+        "enc_hash": enc_hash
     }
 
 
