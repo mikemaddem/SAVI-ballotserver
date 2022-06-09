@@ -19,7 +19,6 @@ import os.path
 
 from .manifest import load_manifest_from_file
 from .config import COUNTED_HASH_FILE, STORAGE_DIR, store_hash
-from .export import export, export_private_data, export_all
 
 
 @dataclass
@@ -141,18 +140,10 @@ class Election():
         self._make_ballotbox()
 
     def store_election_state(self, storage_dir: str):
-        export_all(self.manifest,
-                   self.internal_manifest,
-                   self.ceremony_details,
-                   self.guardians,
-                   self.key_ceremony_mediator,
-                   self.encryption_mediator,
-                   self.decryption_mediator,
-                   self.joint_public_key,
-                   self.election_context,
-                   self.ballotbox,
-                   self.datastore,
-                   self.ballotserver_name, storage_dir)
+        # TODO: serialize election state and deserialize it
+        # this might be doable by dumping all the ballots and keys and then importing them back in
+        # for now, this is just a stub that's called during the shutdown process
+        pass
 
 
     def get_election_tally(self) -> PlaintextTally:
