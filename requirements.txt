@@ -9,10 +9,10 @@ electionguard == 1.2.3
 # app/ballot.py: 2
 # app/ballotserver.py: 1
 # app/election.py: 14
-fastapi == 0.70.0
+fastapi == 0.78.0
 
 # app/ballot.py: 3
-pydantic == 1.8.2
+pydantic == 1.9.1
 
 # run.py: 3
-uvicorn == 0.15.0
+uvicorn == 0.17.6

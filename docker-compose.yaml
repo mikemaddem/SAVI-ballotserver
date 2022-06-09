@@ -7,7 +7,7 @@ services:
       dockerfile: ./docker/Dockerfile
     env_file: ./docker/env_file
     volumes:
-      - ./app/data/storage/:/app/data/storage/
+      - storage:/app/data/storage/
     cap_drop:
       - ALL
     cap_add:
@@ -27,3 +27,6 @@ services:
       - CHOWN
       - SETGID
       - SETUID
+
+volumes:
+  storage:

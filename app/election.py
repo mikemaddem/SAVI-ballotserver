@@ -19,6 +19,7 @@ import os.path
 
 from .manifest import load_manifest_from_file
 from .config import COUNTED_HASH_FILE, STORAGE_DIR, store_hash
+from .export import export, export_private_data, export_all
 
 
 @dataclass
@@ -140,19 +141,18 @@ class Election():
         self._make_ballotbox()
 
     def store_election_state(self, storage_dir: str):
-        # self.manifest.to_json_file()
-        # self.internal_manifest.manifest.to_json_file()
-        # self.ceremony_details
-        # for guardian in self.guardians:
-        #     pass
-        # self.key_ceremony_mediator
-        # self.encryption_mediator
-        # self.decryption_mediator
-        # self.joint_public_key
-        # self.election_context.to_json_file()
-        # self.ballotbox
-        # self.datastore
-        pass
+        export_all(self.manifest,
+                   self.internal_manifest,
+                   self.ceremony_details,
+                   self.guardians,
+                   self.key_ceremony_mediator,
+                   self.encryption_mediator,
+                   self.decryption_mediator,
+                   self.joint_public_key,
+                   self.election_context,
+                   self.ballotbox,
+                   self.datastore,
+                   self.ballotserver_name, storage_dir)
 
 
     def get_election_tally(self) -> PlaintextTally:
